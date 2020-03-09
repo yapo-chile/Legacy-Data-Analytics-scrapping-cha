@@ -1,0 +1,9 @@
+# Scrapy temp folder
+.scrapy
+
+# Byte-compiled / optimized / DLL files
+_pycache__/**
+*.py[cod]
+*$py.class
+
+.virtualenv
