@@ -5,16 +5,19 @@ from scrapy.spidermiddlewares.httperror import HttpError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import TimeoutError, TCPTimedOutError
 from scrapy.loader import ItemLoader
+from scrapy.http import FormRequest
+from cha.items import AdItem
 
 class CHASpider(scrapy.Spider):
     name = "cha"
     allowed_domains = ['www.chileautos.cl']
-    url_base = 'https://www.chileautos.cl/vehiculos/'
+    url_base = 'https://www.chileautos.cl'
+
+    no_scrap = False #No scrapping, only crawling
 
     def start_requests(self):
         yield scrapy.Request(
-            #url='/' + operacion, 
-            url = self.url_base, #TEST
+            url = self.url_base + '/vehiculos/acu%C3%A1ticos-veh%C3%ADculo/anfibio-categoria/',
             callback=self.parseListing, 
             errback=self.errback,
             cb_kwargs=dict(depth=0),
@@ -93,6 +96,27 @@ class CHASpider(scrapy.Spider):
             logging.warning("Still too big: " + response.url + " (" + str(qty) + ")" + "(" + str(depth) + ")")
     
     def parseInnerListing(self, response):
+
+        if self.no_scrap == False:
+            for itemSelector in response.xpath('//div[@class="listing-items"]/div[has-class("listing-item")]'):
+                l = ItemLoader(item=AdItem(), selector=itemSelector)
+                l.add_xpath('id', '@id')
+                l.add_xpath('titulo', 'div/div/h3/a/text()')
+                l.add_value('url', self.url_base + itemSelector.xpath('div/div/h3/a/@href').get())
+                l.add_xpath('tipo_vendedor', 'div/div/span[@class="seller-type"]/text()')
+                l.add_xpath('locacion_vendedor', 'div/div/span[@class="seller-location"]/text()')
+                l.add_xpath('precio', './/div[@class="price"]/a/text()', re='([$0-9\.]+)\s')
+                l.add_xpath('kilometraje', './/div[@data-type="Odometer"]/text()', re='([0-9\.]+)')
+                l.add_xpath('transmision', './/div[@data-type="Transmission"]/text()')
+                l.add_xpath('combustible', './/div[@data-type="Fuel Type"]/text()')
+                item = l.load_item()
+
+                yield response.follow(
+                    url=item['url'],
+                    callback=self.parseAd,
+                    errback=self.errback,
+                    cb_kwargs=dict(item=item),
+                )
         
         next_page = response.xpath('//nav[@class="pager"]/ul/li/a[@class="page-link next "]/@href').get()
         if next_page is not None:
@@ -102,6 +126,32 @@ class CHASpider(scrapy.Spider):
                 errback=self.errback,
                 dont_filter=True,
             )
+    
+    def parseAd(self, response, item):
+        if response.xpath('//div[@class="details-wrapper"]//h1/text()').get() is None:
+            logging.warning("Retrying ad: " + response.url)
+            yield response.request.replace(dont_filter=True) # Retry
+        else:
+            if response.xpath('//section[has-class("seller-info")]//form').get() is not None:
+                urlSellerInfo = response.xpath('//section[has-class("seller-info")]//form/@action').get()
+                verificationToken = response.xpath('//section[has-class("seller-info")]//form/input[@name="__RequestVerificationToken"]/@value').get()
+
+                yield FormRequest(
+                    self.url_base + urlSellerInfo, 
+                    formdata=dict(__RequestVerificationToken=verificationToken),
+                    callback=self.parseSellerInfo,
+                    errback=self.errback,
+                    cb_kwargs=dict(item=item),
+                    )
+
+    def parseSellerInfo(self, response, item):
+        if response.xpath('//div[h6="Nombre"]/p/text()').get() is None:
+            logging.warning("Retrying seller info: " + response.url)
+            yield response.request.replace(dont_filter=True) # Retry
+        else:
+            l = ItemLoader(item=item, response=response)
+            l.add_xpath('seller', '//div[h6="Nombre"]/p/text()')
+            yield l.load_item()
     
     def errback(self, failure):
         # log all failures
