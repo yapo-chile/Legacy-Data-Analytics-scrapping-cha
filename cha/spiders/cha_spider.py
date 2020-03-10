@@ -17,7 +17,7 @@ class CHASpider(scrapy.Spider):
 
     def start_requests(self):
         yield scrapy.Request(
-            url = self.url_base + '/vehiculos/acu%C3%A1ticos-veh%C3%ADculo/anfibio-categoria/',
+            url = self.url_base + '/vehiculos/',
             callback=self.parseListing, 
             errback=self.errback,
             cb_kwargs=dict(depth=0),
@@ -96,7 +96,6 @@ class CHASpider(scrapy.Spider):
             logging.warning("Still too big: " + response.url + " (" + str(qty) + ")" + "(" + str(depth) + ")")
     
     def parseInnerListing(self, response):
-
         if self.no_scrap == False:
             for itemSelector in response.xpath('//div[@class="listing-items"]/div[has-class("listing-item")]'):
                 l = ItemLoader(item=AdItem(), selector=itemSelector)
@@ -109,13 +108,13 @@ class CHASpider(scrapy.Spider):
                 l.add_xpath('kilometraje', './/div[@data-type="Odometer"]/text()', re='([0-9\.]+)')
                 l.add_xpath('transmision', './/div[@data-type="Transmission"]/text()')
                 l.add_xpath('combustible', './/div[@data-type="Fuel Type"]/text()')
-                item = l.load_item()
+                aditem = l.load_item()
 
                 yield response.follow(
-                    url=item['url'],
+                    url=aditem['url'],
                     callback=self.parseAd,
                     errback=self.errback,
-                    cb_kwargs=dict(item=item),
+                    cb_kwargs={'item':aditem},
                 )
         
         next_page = response.xpath('//nav[@class="pager"]/ul/li/a[@class="page-link next "]/@href').get()
@@ -136,12 +135,13 @@ class CHASpider(scrapy.Spider):
                 urlSellerInfo = response.xpath('//section[has-class("seller-info")]//form/@action').get()
                 verificationToken = response.xpath('//section[has-class("seller-info")]//form/input[@name="__RequestVerificationToken"]/@value').get()
 
-                yield FormRequest(
-                    self.url_base + urlSellerInfo, 
-                    formdata=dict(__RequestVerificationToken=verificationToken),
-                    callback=self.parseSellerInfo,
-                    errback=self.errback,
-                    cb_kwargs=dict(item=item),
+                if verificationToken is not None:
+                    yield FormRequest(
+                        self.url_base + urlSellerInfo, 
+                        formdata=dict(__RequestVerificationToken=verificationToken),
+                        callback=self.parseSellerInfo,
+                        errback=self.errback,
+                        cb_kwargs={'item':item},
                     )
 
     def parseSellerInfo(self, response, item):

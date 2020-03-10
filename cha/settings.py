@@ -91,3 +91,6 @@ AUTOTHROTTLE_ENABLED = True
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+# En ciertas ocaciones Chileautos retorna un codigo 400 que debemos considerar para reintento.
+RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429, 400]
