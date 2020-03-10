@@ -150,7 +150,7 @@ class CHASpider(scrapy.Spider):
             yield response.request.replace(dont_filter=True) # Retry
         else:
             l = ItemLoader(item=item, response=response)
-            l.add_xpath('seller', '//div[h6="Nombre"]/p/text()')
+            l.add_xpath('vendedor', '//div[h6="Nombre"]/p/text()')
             yield l.load_item()
     
     def errback(self, failure):

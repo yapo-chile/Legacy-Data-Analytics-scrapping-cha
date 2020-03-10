@@ -19,5 +19,5 @@ class AdItem(scrapy.Item):
     kilometraje = scrapy.Field(output_processor=clean_text)
     transmision = scrapy.Field(output_processor=clean_text)
     combustible = scrapy.Field(output_processor=clean_text)
-    seller = scrapy.Field(output_processor=clean_text)
+    vendedor = scrapy.Field(output_processor=clean_text)
 
