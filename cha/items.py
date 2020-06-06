@@ -19,5 +19,12 @@ class AdItem(scrapy.Item):
     kilometraje = scrapy.Field(output_processor=clean_text)
     transmision = scrapy.Field(output_processor=clean_text)
     combustible = scrapy.Field(output_processor=clean_text)
-    vendedor = scrapy.Field(output_processor=clean_text)
+    id_automotora = scrapy.Field(output_processor=clean_text)
+    patente = scrapy.Field(output_processor=clean_text)
+
+class DealerItem(scrapy.Item):
+    nombre = scrapy.Field(output_processor=clean_text)
+    url = scrapy.Field(output_processor=clean_text)
+    num_avisos = scrapy.Field(output_processor=clean_text)
+    
 

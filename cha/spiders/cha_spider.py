@@ -131,27 +131,12 @@ class CHASpider(scrapy.Spider):
             logging.warning("Retrying ad: " + response.url)
             yield response.request.replace(dont_filter=True) # Retry
         else:
-            if response.xpath('//section[has-class("seller-info")]//form').get() is not None:
-                urlSellerInfo = response.xpath('//section[has-class("seller-info")]//form/@action').get()
-                verificationToken = response.xpath('//section[has-class("seller-info")]//form/input[@name="__RequestVerificationToken"]/@value').get()
-
-                if verificationToken is not None:
-                    yield FormRequest(
-                        self.url_base + urlSellerInfo, 
-                        formdata=dict(__RequestVerificationToken=verificationToken),
-                        callback=self.parseSellerInfo,
-                        errback=self.errback,
-                        cb_kwargs={'item':item},
-                    )
-
-    def parseSellerInfo(self, response, item):
-        if response.xpath('//div[h6="Nombre"]/p/text()').get() is None:
-            logging.warning("Retrying seller info: " + response.url)
-            yield response.request.replace(dont_filter=True) # Retry
-        else:
             l = ItemLoader(item=item, response=response)
-            l.add_xpath('vendedor', '//div[h6="Nombre"]/p/text()')
-            yield l.load_item()
+            l.add_xpath('patente', '//a[@data-webm-clickvalue="autofact"]/@href', re='https://www.chileautos.cl:443/autofact/([A-Za-z]{4}[0-9]{2})\?rel=nofollow')
+            l.add_xpath('id_automotora', '//a[@data-webm-clickvalue="view-dealer-stock"]/@href', re='/vehiculos\?q=SellerId.(CL-SELLER-[0-9]+).')
+            item = l.load_item()
+            
+            yield item
     
     def errback(self, failure):
         # log all failures
