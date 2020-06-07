@@ -67,9 +67,9 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'cha.pipelines.ChaPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'cha.pipelines.ExportPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
@@ -94,3 +94,5 @@ DEFAULT_REQUEST_HEADERS = {
 
 # En ciertas ocaciones Chileautos retorna un codigo 400 que debemos considerar para reintento.
 RETRY_HTTP_CODES = [500, 502, 503, 504, 522, 524, 408, 429, 400]
+
+DUPEFILTER_DEBUG = True
