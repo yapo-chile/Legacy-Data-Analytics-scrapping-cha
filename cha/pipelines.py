@@ -19,7 +19,7 @@ class ExportPipeline(object):
 
         carsFile = open('cha_{}_cars.csv'.format(timestamp), 'wb')
         self.carsExporter = CsvItemExporter(carsFile)
-        self.carsExporter.fields_to_export = ['id_seller', 'titulo', 'precio', 'kilometros', 'url']
+        self.carsExporter.fields_to_export = ['id_seller', 'id', 'patente', 'titulo', 'precio', 'kilometros', 'url']
         self.carsExporter.start_exporting()
 
     def close_spider(self, spider):

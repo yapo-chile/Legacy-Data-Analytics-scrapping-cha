@@ -8,6 +8,8 @@
 import scrapy
 from scrapy.loader.processors import Compose, MapCompose, Join, TakeFirst
 clean_text = Compose(MapCompose(lambda v: v.strip()), Join(), (lambda x: x.strip()))
+uppercase_text = (lambda x: x.upper())
+removepoint_text = (lambda x: x.replace(".", ""))
 
 class AdItem(scrapy.Item):
     id = scrapy.Field(output_processor=clean_text)
@@ -30,17 +32,13 @@ class DealerItem(scrapy.Item):
     num_avisos = scrapy.Field(output_processor=clean_text)
     url = scrapy.Field(output_processor=clean_text)
 
-    def __str__(self):
-        return ""
-
 class CarItem(scrapy.Item):
     id_seller = scrapy.Field(output_processor=clean_text)
+    id = scrapy.Field(output_processor=clean_text)
+    patente = scrapy.Field(output_processor=Compose(clean_text, uppercase_text))
     url = scrapy.Field(output_processor=clean_text)
     titulo = scrapy.Field(output_processor=clean_text)
-    precio = scrapy.Field(output_processor=Compose(clean_text, (lambda x: x.replace(".", ""))))
-    kilometros = scrapy.Field(output_processor=Compose(clean_text, (lambda x: x.replace(".", ""))))
-    
-    def __str__(self):
-        return ""
+    precio = scrapy.Field(output_processor=Compose(clean_text, removepoint_text))
+    kilometros = scrapy.Field(output_processor=Compose(clean_text, removepoint_text))
     
 
