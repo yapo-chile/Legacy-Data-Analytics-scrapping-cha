@@ -13,6 +13,8 @@ class CHASpider(scrapy.Spider):
     allowed_domains = ['www.chileautos.cl']
     url_base = 'https://www.chileautos.cl'
 
+    scrap_patentes = False
+
     def start_requests(self):
         yield scrapy.Request(
             url = self.url_base + '/automotoras/buscar',
@@ -22,7 +24,7 @@ class CHASpider(scrapy.Spider):
     
     def parseDealerListing(self, response):
         for dealerSelector in response.xpath('//div[has-class("l-content__dealer-search-results")]//div[has-class("dealer-search-item")]'):
-            urlDealer = dealerSelector.xpath('div[has-class("listing-item__header")]/a/@href').re_first(r'http://www.chileautos.cl(/[a-zA-Z0-9-_%]+)')
+            urlDealer = dealerSelector.xpath('div[has-class("listing-item__header")]/a/@href').re_first(r'http://www.chileautos.cl(/[a-zA-Z0-9-_%!]+)')
 
             l = ItemLoader(item=DealerItem(), selector=dealerSelector)
             l.add_value('url', self.url_base + urlDealer)
@@ -68,12 +70,15 @@ class CHASpider(scrapy.Spider):
             l.add_xpath('kilometros', './/ul[has-class("listing-item__features")]/li[span/text()="Kilómetros"]/text()', re='([0-9.]+) kms')
             carItem = l.load_item()
 
-            yield response.follow(
-                url= "https://www.chileautos.cl/autofact/" + carItem['id'].lower(),
-                callback=self.parseAutofact,
-                errback=self.errback,
-                cb_kwargs={'carItem':carItem},
-            )
+            if self.scrap_patentes:
+                yield response.follow(
+                    url= "https://www.chileautos.cl/autofact/" + carItem['id'].lower(),
+                    callback=self.parseAutofact,
+                    errback=self.errback,
+                    cb_kwargs={'carItem':carItem},
+                )
+            else:
+                yield carItem
 
         next_page = response.xpath('//div[has-class("control--pagination")]/ul/li[has-class("pagination__btn-next") and not(has-class("disabled"))]/a/@href').get()
         if next_page is not None:
